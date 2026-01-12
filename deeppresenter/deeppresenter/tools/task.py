@@ -5,7 +5,7 @@ from typing import Literal
 
 from appcore import mcp
 from filelock import FileLock
-from pptx import Presentation
+from pptagent_pptx import Presentation
 from pydantic import BaseModel
 
 from deeppresenter.utils.log import info, warning

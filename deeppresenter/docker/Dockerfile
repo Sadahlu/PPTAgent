@@ -32,11 +32,12 @@ ENV PATH="/opt/.venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
+    CHROME_PATH=/usr/bin/chromium \
     VIRTUAL_ENV="/opt/.venv"
 
 # Create Python virtual environment and install packages
 RUN uv venv --python 3.13 $VIRTUAL_ENV && \
-    uv pip install pip python-pptx matplotlib seaborn plotly numpy pandas opencv-python-headless pillow
+    uv pip install pip python-pptx matplotlib seaborn plotly numpy pandas opencv-python-headless pillow html2image
 
 # Creating System environment for mermaid-cli
 # Install Chromium and dependencies

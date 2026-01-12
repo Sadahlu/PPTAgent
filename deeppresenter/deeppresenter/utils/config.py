@@ -192,7 +192,7 @@ class LLM(BaseModel):
                     message.content = response_format(
                         **get_json_from_response(message.content)
                     ).model_dump_json(indent=2)
-                assert tools is None or len(message.tool_calls), (
+                assert tools is None or message.tool_calls, (
                     "No tool call returned from the model"
                 )
                 assert message.tool_calls or message.content, (
@@ -288,6 +288,7 @@ class DeepPresenterConfig(BaseModel):
     )
     research_agent: LLM = Field(description="Research agent model configuration")
     design_agent: LLM = Field(description="Design agent model configuration")
+    ppt_agent: LLM = Field(description="PPT agent model configuration")
     long_context_model: LLM = Field(description="Long context model configuration")
     vision_model: LLM = Field(description="Vision model configuration")
     t2i_model: LLM = Field(description="Text-to-image model configuration")
@@ -313,6 +314,7 @@ class DeepPresenterConfig(BaseModel):
         await asyncio.gather(
             self.research_agent.validate(),
             self.design_agent.validate(),
+            self.ppt_agent.validate(),
             self.long_context_model.validate(),
             self.vision_model.validate(),
         )

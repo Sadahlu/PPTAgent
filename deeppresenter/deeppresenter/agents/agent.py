@@ -109,6 +109,9 @@ class Agent:
             raise ValueError(f"Language '{language}' not found in system prompts")
         self.system = role_config.system[language]
 
+        # Replace {workspace} placeholder in system prompt
+        self.system = self.system.format(workspace=self.workspace)
+
         # ? for those agents equipped with sandbox only
         if any(t["function"]["name"] == "execute_command" for t in self.tools):
             self.system += AGENT_PROMPT.format(

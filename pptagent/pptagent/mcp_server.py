@@ -151,7 +151,7 @@ class PPTAgentServer(PPTAgent):
             )
 
             return {
-                "message": "Template set successfully, please select layout from given layouts later",
+                "message": "Template set successfully, please select layout from given layouts later.",
                 "template_description": self.template_description[template_name],
                 "available_layouts": list(self.layouts.keys()),
             }
@@ -169,8 +169,10 @@ class PPTAgentServer(PPTAgent):
             assert self._initialized, (
                 "PPTAgent not initialized, please call `set_template` first"
             )
+            available_layouts = ",".join(self.layouts.keys())
             assert layout in self.layouts, (
-                "Given layout was not in available layouts: " + ", ".join(self.layouts)
+                f"Given layout '{layout}' does not exist! "
+                f"You must use the EXACT layout name from the available_layouts list:[{available_layouts}]"
             )
             if self.layout is not None:
                 message = "Layout update from " + self.layout.title + " to " + layout

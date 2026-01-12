@@ -123,7 +123,8 @@ def inspect_manuscript(md_file: str, page_id: int = 1) -> dict:
     pages = [p for p in markdown.split("\n---\n") if p.strip()]
     if not len(pages) >= page_id:
         return {
-            "error": "Page ID exceeds the number of pages in the document. You could view full content using `read_file` to see if format error happened."
+            "error": f"Page ID `{page_id}` exceeds the total number of pages ({len(pages)}) in the document."
+                     f"Valid page range: 1-{len(pages)}, stop trying larger page numbers. Use `read_file` to view full content if needed."
         }
     result = defaultdict(list)
     result["page_id"] = f"{page_id:02d}/{len(pages):02d}"

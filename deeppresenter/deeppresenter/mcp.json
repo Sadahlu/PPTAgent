@@ -5,14 +5,14 @@
         "command": "uv",
         "args": [
             "run",
-            "deeppresenter/tools/server.py",
+            "deeppresenter/deeppresenter/tools/server.py",
             "$WORKSPACE"
         ],
         "env": {
             "FIRECRAWL_API_KEY": "your_key",
-            "MINERU_API_KEY": "your_key",
+            "MINERU_API_KEY": "eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI4OTIwMDkyMiIsInJvbCI6IlJPTEVfUkVHSVNURVIiLCJpc3MiOiJPcGVuWExhYiIsImlhdCI6MTc2Njk4OTcwMSwiY2xpZW50SWQiOiJsa3pkeDU3bnZ5MjJqa3BxOXgydyIsInBob25lIjoiIiwib3BlbklkIjpudWxsLCJ1dWlkIjoiYzdiMTlhYTQtOTVjNi00NGQ5LTg0NmMtMjA3MDgwMzdjYzNiIiwiZW1haWwiOiJnYnoyMDAzQHFxLmNvbSIsImV4cCI6MTc2ODE5OTMwMX0.akrQtSY78Xdq1fiqQRef7YAiToXE0niAw3JY6J1QwxziolJTxjOM4jlARjkFSeXo2b3qFQ9y08-6l-sFCp44yg",
             "MIN_IMAGE_SIZE": "921600",
-            "TAVILY_API_KEY": "your_key"
+            "TAVILY_API_KEY": "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"
         }
     },
     {
@@ -24,9 +24,9 @@
             "pptagent-mcp"
         ],
         "env": {
-            "PPTAGENT_MODEL": "glm-4.6",
-            "PPTAGENT_API_KEY": "your_key",
-            "PPTAGENT_API_BASE": "https://open.bigmodel.cn/api/paas/v4/"
+            "PPTAGENT_MODEL": "Pro/deepseek-ai/DeepSeek-V3.2",
+            "PPTAGENT_API_KEY": "sk-cjcigurbfqpfuifbqnsubiafjwxmmnwlxrjmhjpmwbxrritq",
+            "PPTAGENT_API_BASE": "https://api.siliconflow.cn/v1"
         }
     },
     {

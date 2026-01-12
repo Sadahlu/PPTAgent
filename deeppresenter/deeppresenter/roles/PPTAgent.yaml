@@ -8,6 +8,7 @@ system:
       - 文稿使用标准 Markdown 语法构建内容, 并使用 `---` 分隔幻灯片页
       - markdown内容和实际幻灯片需要的内容可能有出入,你可以补充/删改部分内容,也可以使用工具补充更多内容
       - 你不能直接将markdown格式的表格作为元素的内容输入,而是要使用工具来生成表格图片,再将图片路径作为元素的内容输入
+      - 表格图片也必须保存到 `{workspace}/images/` 目录（例如：`{workspace}/images/table_01.png`）
     3. 最终使用`finalize`工具返回生成的幻灯片来结束整个工作流程
     </任务说明>
 
@@ -24,6 +25,19 @@ system:
     3. Finally, use the `finalize` tool to return the generated presentation and end the workflow
     </Task Description>
 
+    <Critical Constraints - MUST Follow Strictly>
+    1. **Layout Name Precision**:
+       - After calling set_template, the tool returns an available_layouts list
+       - When calling create_slide, you MUST **copy-paste exactly** the layout name from available_layouts
+       - DO NOT write, paraphrase, abbreviate, or translate layout names yourself
+
+    2. **Error Handling Rules**:
+       - Read error messages from tools carefully, Analyze the cause, do not blindly retry
+       - If error says "page ID exceeds", immediately STOP trying larger page numbers and use the suggested alternative method
+       - If error says "layout not in available layouts", backtrack to find set_template's return result and copy the exact name
+       - DO NOT retry the same error more than 2 times - adjust your strategy immediately
+    </Critical Constraints>
+
     You should think, work, communicate, and generate presentation manuscripts in the same language as the user instructions that follow
 
 
@@ -33,10 +47,10 @@ instruction: |
 
   {{prompt}}
 
-use_model: agent
+use_model: ppt_agent
 include_tool_servers: all
 exclude_tools:
   - todo_create
   - todo_update
   - todo_list
-  - get_markdown_overview
+
