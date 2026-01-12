@@ -9,7 +9,7 @@ from markitdown import MarkItDown
 from PIL import Image
 
 from deeppresenter.utils.log import warning
-from deeppresenter.utils.mineru_api import parse_pdf
+from deeppresenter.utils.mineru_api import parse_pdf_offline, parse_pdf_online
 
 IMAGE_EXTENSIONS = [
     "bmp",
@@ -22,11 +22,12 @@ IMAGE_EXTENSIONS = [
     "tiff",
     "webp",
 ]
-MINERU_API_KEY = os.getenv("MINERU_API_KEY", "")
+MINERU_API_URL = os.getenv("MINERU_API_URL", None)
+MINERU_API_KEY = os.getenv("MINERU_API_KEY", None)
 
 
 @mcp.tool()
-async def convert_to_markdown(file_path: str, output_folder: str) -> dict | str:
+async def convert_to_markdown(file_path: str, output_folder: str) -> dict:
     """Convert a file to markdown, it could accept pdf, docx, doc, etc.
     Args:
         file_path: The path of the file to be converted
@@ -35,17 +36,24 @@ async def convert_to_markdown(file_path: str, output_folder: str) -> dict | str:
     Returns:
         The converted results, with file saved to the specified path
     """
+
     output_path = Path(output_folder)
     output_path.mkdir(parents=True, exist_ok=True)
     if len(os.listdir(output_path)) != 0:
-        return "Error: output folder should be empty or not exist"
+        return {
+            "success": False,
+            "error": "Error: output folder should be empty or not exist",
+        }
+    if not os.path.exists(file_path):
+        return {"success": False, "error": f"Error: file {file_path} does not exist"}
 
     markdown_file = output_path / f"{Path(file_path).stem}.md"
 
-    if file_path.lower().endswith(".pdf") and MINERU_API_KEY:
-        await parse_pdf(
-            file_path, str(output_path), MINERU_API_KEY, model_version="vlm"
-        )
+    if file_path.lower().endswith(".pdf") and (MINERU_API_KEY or MINERU_API_URL):
+        if MINERU_API_KEY:
+            await parse_pdf_online(file_path, str(output_path), MINERU_API_KEY)
+        elif MINERU_API_URL:
+            await parse_pdf_offline(file_path, str(output_path), MINERU_API_URL)
         for f in output_path.glob("*"):
             if f.name.lower().endswith(".md"):
                 os.rename(f, str(markdown_file))
@@ -59,8 +67,15 @@ async def convert_to_markdown(file_path: str, output_folder: str) -> dict | str:
             conver_result.text_content, output_path / "images"
         )
 
-        with open(str(markdown_file), "w", encoding="utf-8") as f:
-            f.write(markdown)
+    for match in re.findall(r"!\[.*?\]\((.*?)\)", markdown):
+        local_path = match.split()[0].strip("\"'")
+        p = Path(local_path)
+        if (output_path / local_path).exists():
+            p = output_path / local_path
+        if p.exists():
+            markdown = markdown.replace(local_path, str(p.resolve()))
+    with open(str(markdown_file), "w", encoding="utf-8") as f:
+        f.write(markdown)
 
     images = output_path.glob("images/*")
     images_with_info = []
@@ -103,14 +118,3 @@ def parse_base64_images(markdown: str, image_dir: Path) -> str:
         markdown = markdown.replace(data_uri, str(image_path))
 
     return markdown
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(
-        convert_to_markdown(
-            "file:///Users/forcelss/Code/PPTea/test.pdf",
-            "workspace/micar/小米造车毛利率已超特斯拉.md",
-        )
-    )

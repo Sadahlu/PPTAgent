@@ -7,7 +7,29 @@ from pathlib import Path
 import aiohttp
 
 
-async def parse_pdf(
+async def parse_pdf_offline(pdf_path: str, output_path: str, url: str) -> None:
+    """Parse PDF using a local/compatible MinerU endpoint."""
+    os.makedirs(output_path, exist_ok=True)
+    pdf_path_obj = Path(pdf_path)
+
+    async with aiohttp.ClientSession() as session:
+        form = aiohttp.FormData()
+        form.add_field(
+            "pdf",
+            pdf_path_obj.read_bytes(),
+            filename=pdf_path_obj.name,
+            content_type="application/pdf",
+        )
+
+        async with session.post(url, data=form) as resp:
+            if resp.status != 200:
+                await _raise_parsedoc_error(resp)
+            content = await resp.read()
+
+    _extract_zip_bytes(content, output_path)
+
+
+async def parse_pdf_online(
     pdf_path: str, output_path: str, token: str, model_version: str = "vlm"
 ) -> None:
     """Parse PDF using MinerU external API
@@ -23,7 +45,7 @@ async def parse_pdf(
 
     async with aiohttp.ClientSession() as session:
         batch_id, upload_url, upload_headers = await _request_upload_url(
-            session, pdf_path.name, pdf_path.stem, model_version, token
+            session, pdf_path.name, pdf_path.stem[:128], model_version, token
         )
 
         await _upload_file(session, upload_url, pdf_path, upload_headers)
@@ -120,6 +142,20 @@ async def _download_and_extract(
         resp.raise_for_status()
         content = await resp.read()
 
+    _extract_zip_bytes(content, output_path)
+
+
+async def _raise_parsedoc_error(resp: aiohttp.ClientResponse) -> None:
+    """Raise a RuntimeError with parsed error content."""
+    try:
+        payload = await resp.json()
+    except Exception:
+        payload = await resp.text()
+    raise RuntimeError(payload)
+
+
+def _extract_zip_bytes(content: bytes, output_path: str) -> None:
+    """Extract zip bytes into output_path."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp:
         tmp.write(content)
         zip_path = tmp.name

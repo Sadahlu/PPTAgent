@@ -1,14 +1,54 @@
 import csv
+import math
 import re
+import shutil
 from pathlib import Path
 from typing import Literal
 
 from appcore import mcp
 from filelock import FileLock
+
+from PIL import Image
 from pptagent_pptx import Presentation
 from pydantic import BaseModel
 
 from deeppresenter.utils.log import info, warning
+
+
+def _rewrite_image_link(match: re.Match[str], md_dir: Path) -> str:
+    alt_text = match.group(1)
+    target = match.group(2).strip()
+    if not target:
+        return match.group(0)
+    parts = re.match(r"([^\s]+)(.*)", target)
+    if not parts:
+        return match.group(0)
+    local_path = parts.group(1).strip("\"'")
+    rest = parts.group(2)
+    p = Path(local_path)
+    if not p.is_absolute() and (md_dir / local_path).exists():
+        p = md_dir / local_path
+    if not p.exists():
+        return match.group(0)
+
+    updated_alt = alt_text
+    try:
+        with Image.open(p) as img:
+            width, height = img.size
+        if width > 0 and height > 0 and not re.search(r"\b\d+:\d+\b", updated_alt):
+            factor = math.gcd(width, height)
+            ratio = f"{width // factor}:{height // factor}"
+            updated_alt = f"{updated_alt}, {ratio}" if updated_alt else ratio
+    except OSError:
+        pass
+
+    resolved = p.resolve()
+    base_dir = md_dir.resolve()
+    if resolved.is_relative_to(base_dir):
+        new_path = resolved.relative_to(base_dir).as_posix()
+    else:
+        new_path = resolved.as_posix()
+    return f"![{updated_alt}]({new_path}{rest})"
 
 
 class Todo(BaseModel):
@@ -124,14 +164,11 @@ def ask_user(question: str) -> str:
 def thinking(thought: str):
     """This tool is for explicitly reasoning about the current task state and next actions."""
     info(f"Thought: {thought}")
-    return ""
+    return thought
 
 
 @mcp.tool(exclude_args=["agent_name"])
-def finalize(
-    outcome: str,
-    agent_name: str | None = None,
-) -> str:
+def finalize(outcome: str, agent_name: str = "") -> str:
     """
     When all tasks are finished, call this function to finalize the loop.
     Args:
@@ -142,19 +179,20 @@ def finalize(
     if not path.exists():
         return f"Outcome file {outcome} does not exist"
     if agent_name == "Research":
+        md_dir = path.parent
         if not (path.is_file() and path.suffix == ".md"):
             return "Outcome file should be a markdown file"
         with open(path, encoding="utf-8") as f:
             content = f.read()
-        for local_path in set(re.findall(r"!\[.*?\]\((.*?)\)", content)):
-            p = Path(local_path)
-            if not p.exists():
-                return f"image: {local_path} in {outcome} does not exist"
-            content = content.replace(local_path, str(p.resolve()))
-            if re.search(r"!\[.*?\]\(https?://.*?\)", content):
-                return "Markdown file should not contain external image links"
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
+
+        content = re.sub(
+            r"!\[(.*?)\]\((.*?)\)",
+            lambda match: _rewrite_image_link(match, md_dir),
+            content,
+        )
+        shutil.copyfile(path, path.with_suffix(".bak.md"))
+        path.write_text(content, encoding="utf-8")
+
     elif agent_name == "PPTAgent":
         if not (path.is_file() and path.suffix == ".pptx"):
             return "Outcome file should be a pptx file"
@@ -162,11 +200,9 @@ def finalize(
         if len(prs.slides) <= 0:
             return "PPTX file should contain at least one slide"
     elif agent_name == "Design":
-        if not (path.is_dir() and path.stem.startswith("slide")):
-            return "Outcome directory should start with 'slide'"
         html_files = list(path.glob("*.html"))
         if len(html_files) <= 0:
-            return "Outcome directory should contain at least one HTML file"
+            return "Outcome path should be a directory containing HTML files"
         if not all(f.stem.startswith("slide_") for f in html_files):
             return "All HTML files should start with 'slide_', and without index.html"
     else:
@@ -174,7 +210,10 @@ def finalize(
 
     if LOCAL_TODO_CSV_PATH.exists():
         LOCAL_TODO_CSV_PATH.unlink()
+    if LOCAL_TODO_LOCK_PATH.exists():
+        LOCAL_TODO_LOCK_PATH.unlink()
 
+    info(f"Agent {agent_name} finalized the outcome: {outcome}")
     return outcome
 
 

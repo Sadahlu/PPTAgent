@@ -8,12 +8,11 @@ from deeppresenter.agents.design import Design
 from deeppresenter.agents.env import AgentEnv
 from deeppresenter.agents.pptagent import PPTAgent
 from deeppresenter.agents.research import Research
-from deeppresenter.utils import DeepPresenterConfig
-from deeppresenter.utils.config import GLOBAL_CONFIG
+from deeppresenter.utils.config import GLOBAL_CONFIG, DeepPresenterConfig
 from deeppresenter.utils.constants import WORKSPACE_BASE
 from deeppresenter.utils.log import debug, error, info, set_logger, timer
 from deeppresenter.utils.typings import ChatMessage, ConvertType, InputRequest, Role
-from deeppresenter.utils.webview import PlaywrightConverter
+from deeppresenter.utils.webview import convert_html_to_pptx
 
 
 class AgentLoop:
@@ -22,7 +21,7 @@ class AgentLoop:
         config: DeepPresenterConfig = GLOBAL_CONFIG,
         session_id: str | None = None,
         workspace: Path = None,
-        language: Literal["zh", "en"] = "zh",
+        language: Literal["zh", "en"] = "en",
     ):
         self.config = config
         self.language = language
@@ -42,17 +41,37 @@ class AgentLoop:
         self,
         request: InputRequest,
         hci_enable: bool = False,
+        check_llms: bool = False,
+        allow_reflection: bool = True,
     ) -> AsyncGenerator[str | ChatMessage, None]:
-        with open(self.workspace / "input_request.json", "w") as f:
+        """Main loop for DeepPresenter generation process.
+        Arguments:
+            request: InputRequest object containing task details.
+            hci_enable(not supported right now): Whether to enable human-computer interaction.
+            check_llms: Whether to check LLM availability before running.
+            allow_reflection: Whether to allow reflection in agents, this will slow down the process but yield better results.
+        Yields:
+            ChatMessage or str: Messages or final output path.
+        """
+        assert self.config.design_agent.is_multimodal or not allow_reflection, (
+            "Reflective design requires a multimodal LLM in the design agent."
+        )
+        if check_llms:
+            self.config.validate_llms()
+        with open(self.workspace / ".input_request.json", "w") as f:
             json.dump(request.model_dump(), f, ensure_ascii=False, indent=2)
-        async with AgentEnv(self.workspace, hci_enable) as agent_env:
+        async with AgentEnv(self.workspace, self.config) as agent_env:
             self.agent_env = agent_env
             request.copy_to_workspace(self.workspace)
             hello_message = f"DeepPresenter running in {self.workspace}, with {len(request.attachments)} attachments, prompt={request.instruction}"
             info(hello_message)
             yield ChatMessage(role=Role.SYSTEM, content=hello_message)
             self.research_agent = Research(
-                self.config, agent_env, self.workspace, language=self.language
+                self.config,
+                agent_env,
+                self.workspace,
+                self.language,
+                allow_reflection,
             )
             try:
                 async for msg in self.research_agent.loop(request):
@@ -71,9 +90,14 @@ class AgentLoop:
                 raise e
             finally:
                 self.research_agent.save_history()
+                self.save_results()
             if request.convert_type == ConvertType.PPTAGENT:
                 self.pptagent = PPTAgent(
-                    self.config, agent_env, self.workspace, language=self.language
+                    self.config,
+                    agent_env,
+                    self.workspace,
+                    self.language,
+                    allow_reflection,
                 )
                 try:
                     async for msg in self.pptagent.loop(request, md_file):
@@ -93,9 +117,14 @@ class AgentLoop:
                     raise e
                 finally:
                     self.pptagent.save_history()
+                    self.save_results()
             else:
                 self.designagent = Design(
-                    self.config, agent_env, self.workspace, language=self.language
+                    self.config,
+                    agent_env,
+                    self.workspace,
+                    self.language,
+                    allow_reflection,
                 )
                 try:
                     async for msg in self.designagent.loop(request, md_file):
@@ -113,21 +142,25 @@ class AgentLoop:
                     raise e
                 finally:
                     self.designagent.save_history()
-                msg = self.workspace / f"{md_file.stem}.pdf"
-                self.intermediate_output["pdf"] = str(msg)
-                self.intermediate_output["final"] = str(msg)
-                htmls = list(slide_html_dir.glob("*.html"))
-                async with PlaywrightConverter() as converter:
-                    slide_image_dir = await converter.convert_to_pdf(
-                        htmls, msg, request.aspect_ratio
-                    )
-                    self.intermediate_output["slide_images_dir"] = slide_image_dir
-            with open(self.workspace / "intermediate_output.json", "w") as f:
-                json.dump(
-                    {k: str(v) for k, v in self.intermediate_output.items()},
-                    f,
-                    ensure_ascii=False,
-                    indent=2,
+                    self.save_results()
+                pptx_path = self.workspace / f"{md_file.stem}.pptx"
+                convert_html_to_pptx(
+                    slide_html_dir,
+                    pptx_path,
+                    aspect_ratio=request.aspect_ratio,
                 )
-            info(f"DeepPresenter run completed, output saved to {msg}")
+                self.intermediate_output["pptx"] = pptx_path
+                self.intermediate_output["final"] = str(pptx_path)
+                msg = pptx_path
+            self.save_results()
+            info(f"DeepPresenter finished, final output at: {msg}")
             yield msg
+
+    def save_results(self):
+        with open(self.workspace / "intermediate_output.json", "w") as f:
+            json.dump(
+                {k: str(v) for k, v in self.intermediate_output.items()},
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )

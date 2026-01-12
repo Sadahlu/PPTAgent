@@ -1,51 +1,60 @@
 import base64
+import os
 from pathlib import Path
 
 import httpx
 from appcore import mcp
 from PIL import Image
 
-from deeppresenter.utils import GLOBAL_CONFIG
+from deeppresenter.utils.config import DeepPresenterConfig
+from deeppresenter.utils.log import debug, info
+
+LLM_CONFIG = DeepPresenterConfig.load_from_file(os.getenv("LLM_CONFIG_FILE"))
 
 
-@mcp.tool()
-async def image_generation(prompt: str, width: int, height: int, path: str) -> str:
-    """
-    Generate an image and save it to the specified path.
+if LLM_CONFIG.t2i_model is not None:
 
-    Args:
-        prompt: Text description of the image to generate, should be detailed and specific.
-        width: Width of the image, in pixels
-        height: Height of the image, in pixels
-        path: Full path where the image should be saved
-    """
+    @mcp.tool()
+    async def image_generation(prompt: str, width: int, height: int, path: str) -> str:
+        """
+        Generate an image and save it to the specified path.
 
-    response = await GLOBAL_CONFIG.t2i_model.generate_image(
-        prompt=prompt, width=width, height=height
-    )
+        Args:
+            prompt: Text description of the image to generate, should be detailed and specific.
+            width: Width of the image, in pixels
+            height: Height of the image, in pixels
+            path: Full path where the image should be saved
+        """
 
-    image_b64 = response.data[0].b64_json
-    image_url = response.data[0].url
+        response = await LLM_CONFIG.t2i_model.generate_image(
+            prompt=prompt, width=width, height=height
+        )
 
-    # Create directory if it doesn't exist
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
+        image_b64 = response.data[0].b64_json
+        image_url = response.data[0].url
 
-    if image_b64:
-        # Decode base64 image data
-        image_bytes = base64.b64decode(image_b64)
-    elif image_url:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(image_url)
-            response.raise_for_status()
-            image_bytes = response.content
-    else:
-        raise ValueError("Empty Response")
+        # Create directory if it doesn't exist
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
 
-    # Save image to specified path
-    with open(path, "wb") as file:
-        file.write(image_bytes)
+        if image_b64:
+            # Decode base64 image data
+            image_bytes = base64.b64decode(image_b64)
+        elif image_url:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(image_url)
+                response.raise_for_status()
+                image_bytes = response.content
+        else:
+            raise ValueError("Empty Response")
 
-    return "Image generated successfully, saved to " + path
+        # Save image to specified path
+        with open(path, "wb") as file:
+            file.write(image_bytes)
+
+        info(
+            f"Image generated: prompt='{prompt}', size=({width}x{height}), saved to '{path}'"
+        )
+        return "Image generated successfully, saved to " + path
 
 
 _CAPTION_SYSTEM = """
@@ -70,8 +79,10 @@ async def image_caption(image_path: str) -> dict:
     Returns:
         The caption and size for the image
     """
+    if not Path(image_path).exists():
+        return {"error": f"Image path {image_path} does not exist"}
     image_b64 = f"data:image/jpeg;base64,{base64.b64encode(open(image_path, 'rb').read()).decode('utf-8')}"
-    response = await GLOBAL_CONFIG.vision_model.run(
+    response = await LLM_CONFIG.vision_model.run(
         messages=[
             {"role": "system", "content": _CAPTION_SYSTEM},
             {
@@ -81,6 +92,9 @@ async def image_caption(image_path: str) -> dict:
         ],
     )
 
+    info(
+        f"Image captioned: path='{image_path}', caption='{response.choices[0].message.content}'"
+    )
     return {
         "size": Image.open(image_path).size,
         "caption": response.choices[0].message.content,
@@ -116,7 +130,7 @@ async def document_analyze(task: str, document_path: str) -> str:
     if Path(document_path).suffix.lower() not in [".txt", ".md"]:
         return "Document must be a text file with .txt or .md extension"
     document = open(document_path, encoding="utf-8").read()
-    response = await GLOBAL_CONFIG.long_context_model.run(
+    response = await LLM_CONFIG.long_context_model.run(
         messages=[
             {"role": "system", "content": _SUMMARY_SYSTEM},
             {
@@ -125,8 +139,11 @@ async def document_analyze(task: str, document_path: str) -> str:
             },
         ],
     )
-
-    return response.choices[0].message.content
+    report = response.choices[0].message.content
+    debug(
+        f"Document analyzed: path='{document_path}', task='{task}', report='{report}'"
+    )
+    return report
 
 
 if __name__ == "__main__":

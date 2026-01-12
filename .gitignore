@@ -1,6 +1,4 @@
 __pycache__
-olddata
-data
 tmp
 build
 *ipynb
@@ -13,8 +11,8 @@ oaib.txt
 runs
 Makefile
 node_modules
-human_eval
 CLAUDE.md
+AGENTS.md
 
 # Copy from vuejs
 

@@ -11,7 +11,6 @@ WORKDIR /usr/src/app
 RUN apt-get update --allow-insecure-repositories && \
     apt-get install -y --fix-missing  --no-install-recommends --allow-unauthenticated ca-certificates && \
     update-ca-certificates && \
-    apt-get update && \
     apt-get install -y --no-install-recommends git bash
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -59,17 +58,41 @@ RUN apt-get install -y --no-install-recommends \
         libxcomposite1 \
         libxdamage1 \
         libxrandr2 \
-        xdg-utils
+        xdg-utils \
+        fonts-dejavu \
+        fonts-noto \
+        fonts-noto-cjk \
+        fonts-noto-cjk-extra \
+        fonts-noto-color-emoji \
+        fonts-freefont-ttf \
+        fonts-urw-base35 \
+        fonts-roboto \
+        fonts-wqy-zenhei \
+        fonts-wqy-microhei \
+        fonts-arphic-ukai \
+        fonts-arphic-uming \
+        fonts-ipafont \
+        fonts-ipaexfont \
+        fonts-comic-neue \
+        imagemagick
 
 RUN npm install -g @mermaid-js/mermaid-cli
+RUN npm install -g pptxgenjs playwright sharp react react-dom react-icons
+RUN npx playwright install chromium
 
 # Copying config and tailored server files (moved to end, removed CACHEBUST)
 COPY config.json /root/.claude-server-commander/config.json
 COPY server.ts src/server.ts
+COPY improved-process-tools.ts src/tools/improved-process-tools.ts
+
+# Ensure fontconfig picks up CJK fonts and set a sane default for matplotlib.
+RUN fc-cache -f && \
+    printf '%s\n' \
+      'font.family: sans-serif' \
+      'font.sans-serif: Noto Sans CJK SC, Noto Sans CJK, DejaVu Sans' \
+      > /etc/matplotlibrc
 
 # Rebuild the package
 RUN npm run build
-
-RUN apt install -y --no-install-recommends imagemagick
 
 CMD ["node",  "/usr/src/app/dist/index.js", "--no-onboarding"]
