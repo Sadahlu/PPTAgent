@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import uuid
@@ -84,6 +85,7 @@ class UserSession:
     def __init__(self):
         self.loop = AgentLoop(
             session_id=f"{datetime.now().strftime('%Y%m%d')}/{uuid.uuid4().hex[:8]}",
+            language="zh"
         )
         self.created_time = time.time()
 
@@ -317,10 +319,11 @@ if __name__ == "__main__":
     )
 
     serve_url = "localhost" if len(sys.argv) == 1 else sys.argv[1]
+    webui_port = int(os.getenv("PPTAGENT_PORT", "7861"))
     demo.launch(
         debug=True,
         server_name=serve_url,
-        server_port=7861,
+        server_port=webui_port,
         share=False,
         max_threads=16,
         allowed_paths=[WORKSPACE_BASE],

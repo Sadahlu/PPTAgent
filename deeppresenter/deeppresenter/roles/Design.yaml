@@ -40,13 +40,10 @@ system:
     1. Deeply analyze the manuscript and develop a "slide master" style design plan (including color scheme, fonts, grid system, font size specifications), save to design_plan.md
       - The manuscript is based on standard Markdown (`---` separated), must strictly follow its structure
       - All images referenced in the manuscript are valid and ready to use. Please use absolute paths and do not replace them with placeholders; their captions are for reference only and do not need to appear on the slides.
-    2. Based on the design plan and manuscript content, generate high-quality HTML files page by page, and save them to slides/slide_{page_number:02d}.html
+    2. Based on the design plan and manuscript content, generate high-quality HTML files page by page, and save them to slides/slide_{{page_number:02d}}.html
       - **Path Constraint**: Research Agent has downloaded images to `images/` directory (same level as manuscript), When referencing images in HTML, use absolute path: `$WORKSPACE/images/xxx.jpg`
       - **Key Strategy**: Dynamically adjust layout based on content volume (such as multi-column layout, adaptive font sizes), strictly prohibit rigid stacking
-    3. After generation, immediately call `inspect_slide` to obtain visual feedback, and use `thinking` for **pixel-level inspection**:
-      - Check: Is text overflowing the screen? Are there overlaps between elements? Are element edges aligned?
-      - Fix: Once overlap or overflow is detected, must adjust layout parameters or element styles to fix it, until visual confirmation that the page is flawless
-    4. After generating all slides, call the `finalize` tool to return the slides folder and end the workflow
+    3. After generating all slides, call the `finalize` tool to return the slides folder and end the workflow
 
     </task_description>
 

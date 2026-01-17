@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from itertools import product
 from pathlib import Path
 from typing import Any
@@ -79,6 +80,12 @@ class LLM(BaseModel):
     )
     is_multimodal: bool = Field(
         default=False, description="Whether the model is multimodal"
+    )
+    use_qwen_tool_calling: bool = Field(
+        default=False, description="Whether to use Qwen-specific tool calling format"
+    )
+    allow_reflection: bool = Field(
+        default=False, description="Whether to allow reflection in agents, this will slow down the process but yield better results"
     )
     max_concurrent: int | None = Field(
         default=None, description="Maximum concurrency limit"
@@ -176,6 +183,42 @@ class LLM(BaseModel):
                 tool_choice="auto",
                 **sampling_params,
             )
+            message = response.choices[0].message
+            if not message.tool_calls and self.use_qwen_tool_calling:
+                reasoning_content = getattr(message, "reasoning_content", None)
+                if reasoning_content:
+                    # 从 reasoning_content 中提取 <tool_call>JSON</tool_call>
+                    tool_call_pattern = r"<tool_call>\s*(\{.*?\})\s*</tool_call>"
+                    matches = re.findall(tool_call_pattern, reasoning_content, re.DOTALL)
+
+                    if matches:
+                        from openai.types.chat.chat_completion_message_tool_call import (
+                            ChatCompletionMessageToolCall,
+                            Function,
+                        )
+
+                        tool_calls = []
+                        for idx, match in enumerate(matches):
+                            try:
+                                tool_data = json.loads(match)
+                                tool_calls.append(
+                                    ChatCompletionMessageToolCall(
+                                        id=f"call_qwen_{idx}",
+                                        type="function",
+                                        function=Function(
+                                            name=tool_data["name"],
+                                            arguments=json.dumps(tool_data.get("arguments", {}))
+                                        )
+                                    )
+                                )
+                            except (json.JSONDecodeError, KeyError) as e:
+                                debug(f"Failed to parse Qwen tool call: {e}")
+
+                        # 直接赋值给 message.tool_calls
+                        if tool_calls:
+                            message = message.model_copy(update={"tool_calls": tool_calls})
+                            response.choices[0] = response.choices[0].model_copy(update={"message": message})
+
         elif not self.soft_response_parsing and response_format is not None:
             response: ChatCompletion = await client.chat.completions.parse(
                 model=model,

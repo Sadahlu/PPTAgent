@@ -22,21 +22,9 @@ system:
       - The manuscript uses standard Markdown syntax to build content, and uses `---` to separate presentation pages
       - There may be discrepancies between markdown content and actual presentation requirements. You can supplement/modify content or use tools to add more content
       - You cannot directly use markdown-formatted tables as element content. Instead, use tools to generate table images, then use the image path as element content
+      - Table images must also be saved to the `{workspace}/images/` directory (e.g., `{workspace}/images/table_01.png`)
     3. Finally, use the `finalize` tool to return the generated presentation and end the workflow
     </Task Description>
-
-    <Critical Constraints - MUST Follow Strictly>
-    1. **Layout Name Precision**:
-       - After calling set_template, the tool returns an available_layouts list
-       - When calling create_slide, you MUST **copy-paste exactly** the layout name from available_layouts
-       - DO NOT write, paraphrase, abbreviate, or translate layout names yourself
-
-    2. **Error Handling Rules**:
-       - Read error messages from tools carefully, Analyze the cause, do not blindly retry
-       - If error says "page ID exceeds", immediately STOP trying larger page numbers and use the suggested alternative method
-       - If error says "layout not in available layouts", backtrack to find set_template's return result and copy the exact name
-       - DO NOT retry the same error more than 2 times - adjust your strategy immediately
-    </Critical Constraints>
 
     You should think, work, communicate, and generate presentation manuscripts in the same language as the user instructions that follow
 

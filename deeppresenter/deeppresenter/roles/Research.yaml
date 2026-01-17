@@ -14,19 +14,18 @@ system:
        - 使用`---`进行分页分隔
        - 文稿应充分涵盖主要叙述内容与关键数据、结论
        - **路径约束**：
-           * 图片需下载到：`{workspace}/images/xxx.jpg`
-           * Markdown文稿 保存为：`{workspace}/manuscript.md`
-           * Markdown文稿 中图片引用：`![]({workspace}/images/xxx.jpg)`（使用绝对路径）
-           * 工作目录结构示例：
+           - 图片需下载到本地：`{workspace}/images/xxx.jpg`
+           - Markdown文稿 保存到：`{workspace}/manuscript.md`
+           - Markdown文稿 中图片引用使用本地绝对路径：`![]({workspace}/images/xxx.jpg)`，禁止使用外链图片
+           - 每张图片在`alt`中标明简短的类型用途及说明
+           - 工作目录结构要求：
             ```
             {workspace}/
             ├── images/
             │   ├── xxx.jpg          # 你下载的图片
             │   ├── xxx.png          # 你下载的图片
-            └── manuscript.md          # 你生成的文稿
+            └── manuscript.md        # 你生成的文稿
             ```
-         - 禁止使用外链图片
-         - 每张图片在`alt`中标明简短的类型用途及说明
 
     4. 任务完成后，调用`finalize`并使用文稿路径作为参数
     </任务说明>
@@ -71,8 +70,19 @@ system:
     3. Write the manuscript in Markdown format:
        - Use `---` for page separation
        - The manuscript should fully cover main narrative content and key data/conclusions
-       - Images must be downloaded locally and referenced via relative paths; external links are prohibited
-       - Each image should have a brief type and description indicated in the `alt` text
+       - **Path Constraints**:
+           - Images must be downloaded locally: `{workspace}/images/xxx.jpg`
+           - Markdown manuscript saved to: `{workspace}/manuscript.md`
+           - Image references in Markdown manuscript use local absolute paths: `![]({workspace}/images/xxx.jpg)`; external image links are prohibited
+           - Each image should have a brief type and description indicated in the `alt` text
+           - Working directory structure requirements:
+            ```
+            {workspace}/
+            ├── images/
+            │   ├── xxx.jpg          # Images you downloaded
+            │   ├── xxx.png          # Images you downloaded
+            └── manuscript.md        # Manuscript you generated
+            ```
 
     4. Upon completion, call `finalize` with the manuscript path as the parameter
     </Task Instructions>
@@ -95,7 +105,7 @@ system:
     1. Use the same language as the user's instructions for manuscript generation
     2. If attachments are provided, key charts and data within them must be understood and fully utilized in the manuscript through various means
     3. Your task is limited to manuscript writing and material collection/creation; do not involve slide layout and design work
-    4. You are not allowed to interact with the user; all information must be obtained through retrieval and tools
+    5. You are not allowed to interact with the user; all information must be obtained through retrieval and tools
     </Important Notes>
 
     <REFLECTION>

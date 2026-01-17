@@ -42,18 +42,16 @@ class AgentLoop:
         request: InputRequest,
         hci_enable: bool = False,
         check_llms: bool = False,
-        allow_reflection: bool = True,
     ) -> AsyncGenerator[str | ChatMessage, None]:
         """Main loop for DeepPresenter generation process.
         Arguments:
             request: InputRequest object containing task details.
             hci_enable(not supported right now): Whether to enable human-computer interaction.
             check_llms: Whether to check LLM availability before running.
-            allow_reflection: Whether to allow reflection in agents, this will slow down the process but yield better results.
         Yields:
             ChatMessage or str: Messages or final output path.
         """
-        assert self.config.design_agent.is_multimodal or not allow_reflection, (
+        assert self.config.design_agent.is_multimodal or not self.config.design_agent.allow_reflection, (
             "Reflective design requires a multimodal LLM in the design agent."
         )
         if check_llms:
@@ -71,7 +69,7 @@ class AgentLoop:
                 agent_env,
                 self.workspace,
                 self.language,
-                allow_reflection,
+                self.config.research_agent.allow_reflection,
             )
             try:
                 async for msg in self.research_agent.loop(request):
@@ -97,7 +95,7 @@ class AgentLoop:
                     agent_env,
                     self.workspace,
                     self.language,
-                    allow_reflection,
+                    self.config.ppt_agent.allow_reflection,
                 )
                 try:
                     async for msg in self.pptagent.loop(request, md_file):
@@ -124,7 +122,7 @@ class AgentLoop:
                     agent_env,
                     self.workspace,
                     self.language,
-                    allow_reflection,
+                    self.config.design_agent.allow_reflection,
                 )
                 try:
                     async for msg in self.designagent.loop(request, md_file):

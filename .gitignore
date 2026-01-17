@@ -6,6 +6,9 @@ build
 oaib.txt
 *DS_Store*
 /test_*
+/docs
+/logs
+/test
 *egg-info
 .yarn
 runs
