@@ -12,7 +12,7 @@ from PIL import Image
 from pptagent_pptx import Presentation
 from pydantic import BaseModel
 
-from deeppresenter.utils.log import info, warning
+from deeppresenter.utils.log import error, info, warning
 
 
 def _rewrite_image_link(match: re.Match[str], md_dir: Path) -> str:
@@ -42,12 +42,8 @@ def _rewrite_image_link(match: re.Match[str], md_dir: Path) -> str:
     except OSError:
         pass
 
-    resolved = p.resolve()
-    base_dir = md_dir.resolve()
-    if resolved.is_relative_to(base_dir):
-        new_path = resolved.relative_to(base_dir).as_posix()
-    else:
-        new_path = resolved.as_posix()
+    # ? since slides were placed in an independent folder, we convert image path to absolute path to avoid broken links
+    new_path = p.resolve().as_posix()
     return f"![{updated_alt}]({new_path}{rest})"
 
 
@@ -177,7 +173,7 @@ def finalize(outcome: str, agent_name: str = "") -> str:
     # here we conduct some final checks on agent's outcome
     path = Path(outcome)
     if not path.exists():
-        return f"Outcome file {outcome} does not exist"
+        return f"Outcome {outcome} does not exist"
     if agent_name == "Research":
         md_dir = path.parent
         if not (path.is_file() and path.suffix == ".md"):
@@ -185,13 +181,16 @@ def finalize(outcome: str, agent_name: str = "") -> str:
         with open(path, encoding="utf-8") as f:
             content = f.read()
 
-        content = re.sub(
-            r"!\[(.*?)\]\((.*?)\)",
-            lambda match: _rewrite_image_link(match, md_dir),
-            content,
-        )
-        shutil.copyfile(path, path.with_suffix(".bak.md"))
-        path.write_text(content, encoding="utf-8")
+        try:
+            content = re.sub(
+                r"!\[(.*?)\]\((.*?)\)",
+                lambda match: _rewrite_image_link(match, md_dir),
+                content,
+            )
+            shutil.copyfile(path, path.with_suffix(".bak.md"))
+            path.write_text(content, encoding="utf-8")
+        except Exception as e:
+            error(f"Failed to rewrite image links: {e}")
 
     elif agent_name == "PPTAgent":
         if not (path.is_file() and path.suffix == ".pptx"):
@@ -204,7 +203,7 @@ def finalize(outcome: str, agent_name: str = "") -> str:
         if len(html_files) <= 0:
             return "Outcome path should be a directory containing HTML files"
         if not all(f.stem.startswith("slide_") for f in html_files):
-            return "All HTML files should start with 'slide_', and without index.html"
+            return "All HTML files should start with 'slide_'"
     else:
         warning(f"Unverifiable agent: {agent_name}")
 
@@ -215,10 +214,3 @@ def finalize(outcome: str, agent_name: str = "") -> str:
 
     info(f"Agent {agent_name} finalized the outcome: {outcome}")
     return outcome
-
-
-if __name__ == "__main__":
-    import os
-
-    os.chdir("/opt/workspace/cb5f70ec")
-    finalize("/opt/workspace/cb5f70ec/manuscript.md", "Research")

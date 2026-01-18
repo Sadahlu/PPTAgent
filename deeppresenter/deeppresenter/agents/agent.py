@@ -116,9 +116,6 @@ class Agent:
             raise ValueError(f"Language '{language}' not found in system prompts")
         self.system = role_config.system[language]
         if not allow_reflection:
-            self.system = re.sub(
-                r"<REFLECTION>.*?</REFLECTION>", "", self.system, flags=re.DOTALL
-            )
             self.tools = [
                 t for t in self.tools if not t["function"]["name"].startswith("inspect")
             ]
@@ -134,8 +131,8 @@ class Agent:
                 time=datetime.now().strftime("%Y-%m-%d"),
             )
 
-        if config.offline_mode:
-            self.system += OFFLINE_PROMPT
+            if config.offline_mode:
+                self.system += OFFLINE_PROMPT
 
         self.chat_history: list[ChatMessage] = [
             ChatMessage(role=Role.SYSTEM, content=self.system)
@@ -244,6 +241,9 @@ class Agent:
                     if t.function.name == "finalize":
                         arguments["agent_name"] = self.name
                         finish_id = t.id
+                        assert "outcome" in arguments, (
+                            "Finalize tool call must have an outcome"
+                        )
                         outcome = arguments["outcome"]
                     elif t.function.name in REASON_TOOLS:
                         assert len(tool_calls) == 1, (
@@ -269,7 +269,10 @@ class Agent:
         observations.extend(await asyncio.gather(*coros))
         for obs in observations:
             if obs.has_image:
-                if "gemini" in self.llm.model.lower() or "qwen" in self.llm.model.lower():
+                if (
+                    "gemini" in self.llm.model.lower()
+                    or "qwen" in self.llm.model.lower()
+                ):
                     obs.role = Role.USER
                 if "claude" in self.llm.model.lower():
                     oai_b64 = obs.content[0]["image_url"]["url"]
