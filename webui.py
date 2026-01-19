@@ -182,27 +182,29 @@ class ChatDemo:
                 """收集所有 agents 的 token 统计并生成显示文本"""
                 all_agent_costs = {}
 
-                if hasattr(loop, 'research_agent') and loop.research_agent:
-                    all_agent_costs['Research Agent'] = {
-                        "prompt": getattr(loop.research_agent.cost, 'prompt', 0),
-                        "completion": getattr(loop.research_agent.cost, 'completion', 0),
-                        "total": getattr(loop.research_agent.cost, 'total', 0),
-                        "model": getattr(loop.research_agent, 'model', 'N/A'),
+                if hasattr(loop, "research_agent") and loop.research_agent:
+                    all_agent_costs["Research Agent"] = {
+                        "prompt": getattr(loop.research_agent.cost, "prompt", 0),
+                        "completion": getattr(
+                            loop.research_agent.cost, "completion", 0
+                        ),
+                        "total": getattr(loop.research_agent.cost, "total", 0),
+                        "model": getattr(loop.research_agent, "model", "N/A"),
                     }
 
-                if hasattr(loop, 'designagent') and loop.designagent:
-                    all_agent_costs['Design Agent'] = {
-                        "prompt": getattr(loop.designagent.cost, 'prompt', 0),
-                        "completion": getattr(loop.designagent.cost, 'completion', 0),
-                        "total": getattr(loop.designagent.cost, 'total', 0),
-                        "model": getattr(loop.designagent, 'model', 'N/A'),
+                if hasattr(loop, "designagent") and loop.designagent:
+                    all_agent_costs["Design Agent"] = {
+                        "prompt": getattr(loop.designagent.cost, "prompt", 0),
+                        "completion": getattr(loop.designagent.cost, "completion", 0),
+                        "total": getattr(loop.designagent.cost, "total", 0),
+                        "model": getattr(loop.designagent, "model", "N/A"),
                     }
-                elif hasattr(loop, 'pptagent') and loop.pptagent:
-                    all_agent_costs['PPT Agent'] = {
-                        "prompt": getattr(loop.pptagent.cost, 'prompt', 0),
-                        "completion": getattr(loop.pptagent.cost, 'completion', 0),
-                        "total": getattr(loop.pptagent.cost, 'total', 0),
-                        "model": getattr(loop.pptagent, 'model', 'N/A'),
+                elif hasattr(loop, "pptagent") and loop.pptagent:
+                    all_agent_costs["PPT Agent"] = {
+                        "prompt": getattr(loop.pptagent.cost, "prompt", 0),
+                        "completion": getattr(loop.pptagent.cost, "completion", 0),
+                        "total": getattr(loop.pptagent.cost, "total", 0),
+                        "model": getattr(loop.pptagent, "model", "N/A"),
                     }
 
                 token_lines = ["## Token 使用统计\n"]
@@ -211,10 +213,10 @@ class ChatDemo:
                 total_all = 0
 
                 for agent_name, cost_info in all_agent_costs.items():
-                    prompt = cost_info.get('prompt', 0)
-                    completion = cost_info.get('completion', 0)
-                    total = cost_info.get('total', 0)
-                    model = cost_info.get('model', 'N/A')
+                    prompt = cost_info.get("prompt", 0)
+                    completion = cost_info.get("completion", 0)
+                    total = cost_info.get("total", 0)
+                    model = cost_info.get("model", "N/A")
                     total_prompt += prompt
                     total_completion += completion
                     total_all += total
