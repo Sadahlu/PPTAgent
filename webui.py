@@ -198,7 +198,7 @@ class ChatDemo:
                         "model": getattr(loop.designagent, 'model', 'N/A'),
                     }
                 elif hasattr(loop, 'pptagent') and loop.pptagent:
-                    all_agent_costs['PPTAgent Wrapper'] = {
+                    all_agent_costs['PPT Agent'] = {
                         "prompt": getattr(loop.pptagent.cost, 'prompt', 0),
                         "completion": getattr(loop.pptagent.cost, 'completion', 0),
                         "total": getattr(loop.pptagent.cost, 'total', 0),
