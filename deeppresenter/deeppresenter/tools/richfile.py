@@ -44,14 +44,11 @@ async def inspect_slide(
             f"data:image/jpeg;base64,{base64.b64encode(image_data).decode('utf-8')}"
         )
 
-        if LLM_CONFIG.design_agent.is_multimodal:
-            return ImageContent(
-                type="image",
-                data=base64_data,
-                mimeType="image/jpeg",
-            )
-        else:
-            return "This slide looks good."
+        return ImageContent(
+            type="image",
+            data=base64_data,
+            mimeType="image/jpeg",
+        )
     except Exception as e:
         return e
 
