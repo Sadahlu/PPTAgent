@@ -20,7 +20,7 @@ if LLM_CONFIG.t2i_model is not None:
         Generate an image and save it to the specified path.
 
         Args:
-            prompt: Text description of the image to generate, should be detailed and specific.
+            prompt: Text description of the image to generate. Should be detailed and specific, but do not include aspect ratio.
             width: Width of the image, in pixels
             height: Height of the image, in pixels
             path: Full path where the image should be saved
@@ -114,7 +114,7 @@ Important: Only respond with content directly related to the task and document a
 
 
 @mcp.tool()
-async def document_analyze(task: str, document_path: str) -> str:
+async def document_summary(task: str, document_path: str) -> str:
     """
     Generate a report according to the given task and long document.
 

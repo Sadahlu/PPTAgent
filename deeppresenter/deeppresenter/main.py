@@ -90,6 +90,7 @@ class AgentLoop:
                     f"Research agent failed with error: {e}\n{traceback.format_exc()}"
                 )
                 error(error_message)
+                error(traceback.format_exc())
                 yield ChatMessage(role=Role.SYSTEM, content=error_message)
                 raise e
             finally:
@@ -119,6 +120,7 @@ class AgentLoop:
                         f"PPTAgent failed with error: {e}\n{traceback.format_exc()}"
                     )
                     error(error_message)
+                    error(traceback.format_exc())
                     yield ChatMessage(role=Role.SYSTEM, content=error_message)
                     raise e
                 finally:
@@ -146,6 +148,7 @@ class AgentLoop:
                         f"Design agent failed with error: {e}\n{traceback.format_exc()}"
                     )
                     error(error_message)
+                    error(traceback.format_exc())
                     yield ChatMessage(role=Role.SYSTEM, content=error_message)
                     raise e
                 finally:

@@ -129,7 +129,6 @@ class ChatDemo:
                             value="暂无数据",
                             elem_classes=["token-display"],
                         )
-
                     with gr.Row():
                         pages_dd = gr.Dropdown(
                             label="幻灯片页数 (#pages)",
@@ -186,7 +185,6 @@ class ChatDemo:
                 all_agent_costs = {}
                 all_agent_calls = {}
 
-                # Research Agent
                 if hasattr(loop, 'research_agent') and loop.research_agent:
                     all_agent_costs['Research Agent'] = {
                         "prompt": getattr(loop.research_agent.cost, 'prompt', 0),
@@ -194,11 +192,9 @@ class ChatDemo:
                         "total": getattr(loop.research_agent.cost, 'total', 0),
                         "model": getattr(loop.research_agent, 'model', 'N/A'),
                     }
-                    # 统计调用次数：计算 ASSISTANT 角色的消息数量
                     call_count = sum(1 for msg in loop.research_agent.chat_history if msg.role == Role.ASSISTANT)
                     all_agent_calls['Research Agent'] = call_count
 
-                # Design Agent
                 if hasattr(loop, 'designagent') and loop.designagent:
                     all_agent_costs['Design Agent'] = {
                         "prompt": getattr(loop.designagent.cost, 'prompt', 0),
@@ -209,7 +205,6 @@ class ChatDemo:
                     call_count = sum(1 for msg in loop.designagent.chat_history if msg.role == Role.ASSISTANT)
                     all_agent_calls['Design Agent'] = call_count
 
-                # PPT Agent
                 elif hasattr(loop, 'pptagent') and loop.pptagent:
                     all_agent_costs['PPT Agent'] = {
                         "prompt": getattr(loop.pptagent.cost, 'prompt', 0),
@@ -312,7 +307,6 @@ class ChatDemo:
                         aggregated_text = "\n\n".join(aggregated_parts).strip()
                         history[-1]["content"] = aggregated_text
 
-                        # 收集所有 agents 的 token 统计并生成显示文本
                         token_text = collect_token_stats(loop)
 
                         yield (
@@ -351,7 +345,6 @@ class ChatDemo:
                         aggregated_text = "\n\n".join(aggregated_parts).strip()
                         history[-1]["content"] = aggregated_text
 
-                        # 实时更新 token 统计
                         token_text = collect_token_stats(loop)
 
                         yield (

@@ -70,6 +70,7 @@ full = [
     "peft",
     "huggingface_hub",
     "timm",
+    "unoserver",
 ]
 
 [project.urls]
@@ -108,7 +109,7 @@ markers = [
 ]
 
 [tool.ruff.lint]
-ignore = ["F403", "F405", "E741"]
+ignore = ["F403", "F405", "E741", "E722"]
 
 
 [tool.setuptools.dynamic]

@@ -28,7 +28,6 @@ system:
 
     You should think, work, communicate, and generate presentation manuscripts in the same language as the user instructions that follow
 
-
 instruction: |
   # 待转换的 markdown 文件
   {{ markdown_file }}
@@ -42,4 +41,3 @@ exclude_tools:
   - todo_update
   - todo_list
   - image_generation
-

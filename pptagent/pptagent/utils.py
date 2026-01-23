@@ -9,6 +9,7 @@ import tempfile
 import traceback
 from itertools import product
 from os.path import dirname, exists, join
+from pathlib import Path
 from shutil import which
 from time import sleep, time
 from typing import Any
@@ -86,8 +87,16 @@ def get_logger(name="pptagent", level=None):
 
 logger = get_logger(__name__)
 
-if which("soffice") is None:
-    logging.warning("soffice is not installed, pptx to images conversion will not work")
+if which("unoconvert"):
+    logger.info("using `unoconvert` for pptx to images conversion")
+    unoserver_url = os.environ.get("UNOSERVER_URL", "127.0.0.1")
+    unoserver_port = os.environ.get("UNOSERVER_PORT", "2003")
+elif which("soffice"):
+    logger.info("using `soffice` for pptx to images conversion")
+else:
+    logger.warning(
+        "unoconvert/soffice is not installed, pptx to images conversion will not work"
+    )
 
 # Set of supported image extensions
 IMAGE_EXTENSIONS: set[str] = {
@@ -358,62 +367,62 @@ def get_html_table_image(html: str, output_path: str, css: str = None):
     manual_scan_crop(output_path)
 
 
-@tenacity_decorator
-def ppt_to_images(file: str, output_dir: str):
-    assert exists(file), f"File {file} does not exist"
-    if exists(output_dir):
-        logger.debug(f"ppt2images: {output_dir} already exists")
-    os.makedirs(output_dir, exist_ok=True)
-    with tempfile.TemporaryDirectory() as temp_dir:
-        command_list = [
-            "soffice",
-            "--headless",
-            "--convert-to",
-            "pdf",
-            file,
-            "--outdir",
-            temp_dir,
-        ]
-        process = subprocess.Popen(
-            command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+async def _is_unoserver_running(host: str, port: int) -> bool:
+    try:
+        _, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, port), timeout=10.0
         )
-        out, err = process.communicate()
-        if process.returncode != 0:
-            raise RuntimeError(f"soffice failed with error: {err.decode()}")
-
-        for f in os.listdir(temp_dir):
-            if not f.endswith(".pdf"):
-                continue
-            temp_pdf = join(temp_dir, f)
-            images = convert_from_path(temp_pdf, dpi=72)
-            for i, img in enumerate(images):
-                img.save(join(output_dir, f"slide_{i + 1:04d}.jpg"))
-            return
-
-        raise RuntimeError(
-            f"No PDF file was created in the temporary directory: {file}\n"
-            f"Output: {out.decode()}\n"
-            f"Error: {err.decode()}"
-        )
+        writer.close()
+        await writer.wait_closed()
+        return True
+    except:
+        return False
 
 
-@tenacity_decorator
-async def ppt_to_images_async(file: str, output_dir: str):
+async def ppt_to_images(file: str, output_dir: str, dpi: int = 100):
     assert exists(file), f"File {file} does not exist"
-    if exists(output_dir):
+    if exists(output_dir) and len(os.listdir(output_dir)) > 0:
         logger.debug(f"ppt2images: {output_dir} already exists")
+        return
     os.makedirs(output_dir, exist_ok=True)
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        command_list = [
-            "soffice",
-            "--headless",
-            "--convert-to",
-            "pdf",
-            file,
-            "--outdir",
-            temp_dir,
-        ]
+    with (
+        tempfile.TemporaryDirectory() as out_dir,
+        tempfile.TemporaryDirectory() as profile_dir,
+    ):
+        unoconvert_path = which("unoconvert")
+        soffice_path = which("soffice")
+        pdf_path = None
+        if unoconvert_path is not None and await _is_unoserver_running(
+            unoserver_url, int(unoserver_port)
+        ):
+            converter = "unoconvert"
+            pdf_output = os.path.join(out_dir, os.path.basename(file)) + ".pdf"
+            pdf_path = pdf_output
+            command_list = [
+                unoconvert_path,
+                "--host",
+                unoserver_url,
+                "--port",
+                unoserver_port,
+                file,
+                pdf_output,
+            ]
+        elif soffice_path is not None:
+            converter = "soffice"
+            profile_dir_uri = Path(profile_dir).as_uri()
+            command_list = [
+                soffice_path,
+                f"-env:UserInstallation={profile_dir_uri}",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                file,
+                "--outdir",
+                out_dir,
+            ]
+        else:
+            raise RuntimeError("Neither unoconvert nor soffice is installed")
 
         process = await asyncio.create_subprocess_exec(
             *command_list,
@@ -421,22 +430,24 @@ async def ppt_to_images_async(file: str, output_dir: str):
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
-        if process.returncode != 0:
-            raise RuntimeError(f"soffice failed with error: {stderr.decode()}")
-        for f in os.listdir(temp_dir):
-            if not f.endswith(".pdf"):
-                continue
-            temp_pdf = join(temp_dir, f)
-            images = convert_from_path(temp_pdf, dpi=72)
-            for i, img in enumerate(images):
-                img.save(join(output_dir, f"slide_{i + 1:04d}.jpg"))
-            return
+        returncode = process.returncode
+        if returncode != 0:
+            raise RuntimeError(f"{converter} failed with error: {stderr.decode()}")
 
-        raise RuntimeError(
-            f"No PDF file was created in the temporary directory: {file}\n"
-            f"Output: {stdout.decode()}\n"
-            f"Error: {stderr.decode()}"
-        )
+        if pdf_path is None:
+            pdf_files = [f for f in os.listdir(out_dir) if f.endswith(".pdf")]
+            if len(pdf_files) != 1:
+                raise RuntimeError(
+                    f"Expected 1 PDF file in the temporary directory, got "
+                    f"{len(pdf_files)}: {file}\n"
+                    f"Output: {stdout.decode()}\n"
+                    f"Error: {stderr.decode()}"
+                )
+            pdf_path = join(out_dir, pdf_files[0])
+
+        images = convert_from_path(pdf_path, dpi=dpi)
+        for i, img in enumerate(images):
+            img.save(join(output_dir, f"slide_{i + 1:04d}.jpg"))
 
 
 def parsing_image(image: Image, image_path: str) -> str:
