@@ -122,7 +122,7 @@ class ChatMessage(BaseModel):
     @property
     def has_image(self) -> bool:
         for block in self.content:
-            if block["type"] == "image_url":
+            if block["type"] in ("image_url", "image"):
                 return True
         return False
 

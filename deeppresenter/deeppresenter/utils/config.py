@@ -106,10 +106,10 @@ class Endpoint(BaseModel):
                 **self.sampling_parameters,
             )
             message = response.choices[0].message
-            if not message.tool_calls and self.use_qwen_tool_calling:
+            if not message.tool_calls:
                 reasoning_content = getattr(message, "reasoning_content", None)
                 if reasoning_content:
-                    # 从 reasoning_content 中提取 <tool_call>JSON</tool_call>
+                    # 尝试从 reasoning_content 中提取 <tool_call>JSON</tool_call>
                     tool_call_pattern = r"<tool_call>\s*(\{.*?\})\s*</tool_call>"
                     matches = re.findall(tool_call_pattern, reasoning_content, re.DOTALL)
 
@@ -201,9 +201,6 @@ class LLM(BaseModel):
     soft_response_parsing: bool = Field(
         default=False,
         description="Enable soft parsing: parse response content as JSON directly instead of using completion.parse",
-    )
-    use_qwen_tool_calling: bool = Field(
-        default=False, description="Whether to use Qwen-specific tool calling format"
     )
     allow_reflection: bool = Field(
         default=False, description="Whether to allow reflection in agents, this will slow down the process but yield better results"
