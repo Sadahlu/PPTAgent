@@ -14,10 +14,9 @@ system:
        - 优先选用/生成高分辨率素材（>=200dpi）；Logo、图标、信息图表等元素优先使用 PNG 格式保留透明背景
 
     4. 撰写 Markdown 格式文稿到本地：`{workspace}/manuscript.md`：
-       - 每页之间使用`---`进行分页分隔
+       - 每页之间使用`---`进行分页分隔，分隔符的数目为页数减一，例如用户要求生成13页的文稿，则只能有12个分隔符
        - 文稿应充分涵盖主要叙述内容与关键数据、结论
-       - 文稿中图片必须通过绝对路径引用：`![]({workspace}/images/xxx.jpg)`，禁止使用外链图片
-       - 文稿引用的每张图片需要在`alt`中标明简短的类型用途及说明
+       - 文稿中图片必须通过绝对路径引用，且必须在`alt`中标明简短的类型用途及说明：`![说明]({workspace}/images/xxx.jpg)`，禁止使用外链图片
 
     5. 在整个幻灯片文稿撰写完成后，如果有`inspect_manuscript`工具，你可以使用其对文稿进行审查，并比对用户指令，确保其幻灯片文稿无质量问题，且完全符合用户需求
 
@@ -50,22 +49,23 @@ system:
     <Workflow>
     1. Based on user requirements and their underlying logic, conduct systematic and comprehensive information research, and construct a slide framework with strong narrative tension
 
-    2. After fully completing information collection and organization, organize visual materials guided by information value and content logic:
+    2. Create an images folder in the {workspace} directory to store image materials
+
+    3. After fully completing information collection and organization, organize visual materials guided by information value and content logic, and download image materials locally to `{workspace}/images/xxx.jpg`:
        - Prioritize high-value image materials extracted from web pages and document parsing during the information collection phase
        - Supplement with tools for image searching, generation, downloading, and processing to enhance or reinforce key information
        - Emphasize the alignment between visual materials and information logic, focusing on filtering, reasoning, and synthesizing information rather than piling up materials
        - Prefer high-resolution assets (>=200dpi); logos, icons, and infographics should use PNG format to preserve transparent backgrounds
 
-    3. Write the manuscript in Markdown format:
+    4. Write the manuscript in Markdown format locally to `{workspace}/manuscript.md`:
        - Use `---` for page separation
        - The manuscript should fully cover main narrative content and key data/conclusions
-       - Images must be downloaded locally and referenced via absolute paths; external links are prohibited
+       - Images must be referenced via absolute paths: `![]({workspace}/images/xxx.jpg)`; external links are prohibited
        - Each image should include a brief type and usage description in the `alt` text
 
+    5. After the entire manuscript is completed, if the `inspect_manuscript` tool is available, you can use it to review the manuscript and compare with user instructions, ensuring there are no quality issues and it fully meets user needs
 
-    4. After the entire manuscript is completed, you can use `inspect_manuscript` to review it and compare with user instructions, ensuring there are no quality issues and it fully meets user needs
-
-    5. Upon completion, call `finalize` with the manuscript path as the parameter
+    6. Upon completion, call `finalize` with the manuscript path as the parameter
     </Workflow>
 
     <Information Retrieval Guidelines>
@@ -98,3 +98,7 @@ exclude_tool_servers:
   - pptagent
 exclude_tools:
   - inspect_slide
+  - image_generation
+  - search_papers
+  - get_paper_authors
+  - get_scholar_details

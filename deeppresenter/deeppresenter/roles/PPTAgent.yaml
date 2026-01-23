@@ -41,4 +41,5 @@ exclude_tools:
   - todo_create
   - todo_update
   - todo_list
+  - image_generation
 

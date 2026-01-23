@@ -9,7 +9,6 @@
             "$WORKSPACE"
         ],
         "env": {
-            "FIRECRAWL_API_KEY": "your_key",
             "MINERU_API_KEY": "eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI4OTIwMDkyMiIsInJvbCI6IlJPTEVfUkVHSVNURVIiLCJpc3MiOiJPcGVuWExhYiIsImlhdCI6MTc2ODY1NzQwMCwiY2xpZW50SWQiOiJsa3pkeDU3bnZ5MjJqa3BxOXgydyIsInBob25lIjoiIiwib3BlbklkIjpudWxsLCJ1dWlkIjoiY2VmZDMxYzctZTc5Ny00ZTI2LWE4NDktNTQ2ZDE3NzYxMjY4IiwiZW1haWwiOiJnYnoyMDAzQHFxLmNvbSIsImV4cCI6MTc2OTg2NzAwMH0.GjkXpHlzaZNJGG43loH78KOFdmkaJI-2EU_OEK44T7M1rcV0CoZemPWoyGhu1l9waNEyV77ojpHz_D460xmz5A",
             "MIN_IMAGE_SIZE": "921600",
             "TAVILY_API_KEY": "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"
