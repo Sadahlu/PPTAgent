@@ -6,6 +6,7 @@ from collections.abc import AsyncGenerator
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
+from deeppresenter.utils.config import GLOBAL_CONFIG
 
 import jsonlines
 import yaml
@@ -116,6 +117,9 @@ class Agent:
             raise ValueError(f"Language '{language}' not found in system prompts")
         self.system = role_config.system[language]
         if not allow_reflection:
+            self.system = re.sub(
+                r"<REFLECTION>.*?</REFLECTION>", "", self.system, flags=re.DOTALL
+            )
             self.tools = [
                 t for t in self.tools if not t["function"]["name"].startswith("inspect")
             ]
@@ -190,10 +194,19 @@ class Agent:
             self.log_message(self.chat_history[-1])
 
         with timer(f"{self.name} Agent LLM call"):
-            response = await self.llm.run(
-                messages=self.chat_history,
-                tools=self.tools,
-            )
+            # use vision_model for non-multimodal Design agent with images
+            if self.name == "Design" and not self.llm.is_multimodal and any(msg.has_image for msg in self.chat_history):
+                llm_vision = GLOBAL_CONFIG.vision_model
+                response = await llm_vision.run(
+                    messages=self.chat_history,
+                    tools=self.tools,
+                 )
+                info(f"{self.name} using vision_model: {llm_vision.model}")
+            else:
+                response = await self.llm.run(
+                    messages=self.chat_history,
+                    tools=self.tools,
+                )
             if response.usage is not None:
                 self.cost += response.usage
                 self.context_length = response.usage.total_tokens
@@ -272,6 +285,7 @@ class Agent:
                 if (
                     "gemini" in self.llm.model.lower()
                     or "qwen" in self.llm.model.lower()
+                    or (not self.llm.is_multimodal and "qwen" in GLOBAL_CONFIG.vision_model.model.lower())
                 ):
                     obs.role = Role.USER
                 if "claude" in self.llm.model.lower():
