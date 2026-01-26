@@ -1,8 +1,8 @@
 services:
   build-sandbox:
     build:
-      context: ./docker/SandBox
-      dockerfile: SandBox.buildkit.Dockerfile
+      context: .
+      dockerfile: ./deeppresenter/docker/SandBox/SandBox.buildkit.Dockerfile
       args:
         http_proxy: ${http_proxy:-}
         https_proxy: ${https_proxy:-}
@@ -13,8 +13,8 @@ services:
 
   deeppresenter-host:
     build:
-      context: ./docker/Host
-      dockerfile: Host.Dockerfile
+      context: .
+      dockerfile: ./deeppresenter/docker/Host/Host.buildkit.Dockerfile
       args:
         http_proxy: ${http_proxy:-}
         https_proxy: ${https_proxy:-}
@@ -29,7 +29,7 @@ services:
       DEEPPRESENTER_LOG_LEVEL: 0 # 0: debug, 10: info, 20: warning
     volumes:
       - ./workspace:/opt/workspace
-      - ./deeppresenter:/usr/src/pptagent/deeppresenter
+      - ./deeppresenter:/app/PPTAgent/deeppresenter
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
