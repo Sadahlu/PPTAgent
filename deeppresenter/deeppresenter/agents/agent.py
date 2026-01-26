@@ -1,6 +1,7 @@
 import asyncio
 import json
 import re
+import uuid
 from abc import abstractmethod
 from collections.abc import AsyncGenerator
 from datetime import datetime
@@ -153,7 +154,7 @@ class Agent:
         self.chat_history: list[ChatMessage] = [
             ChatMessage(role=Role.SYSTEM, content=self.system)
         ]
-        self.research_iter = -1
+        self.research_iter = 0
         if config.context_folding:
             self.context_warning = -1
         debug(f"{self.name} Agent got {len(self.tools)} tools")
@@ -360,10 +361,11 @@ class Agent:
         if keep_head + keep_tail > len(self.chat_history):
             return
 
-        self.research_iter += 1
-        if self.research_iter > self.max_context_turns:
+        if self.research_iter == self.max_context_turns:
             return
 
+        self.save_history(message_only=True)
+        self.research_iter += 1
         head, tail = self._split_history(keep_head, keep_tail)
         summary_ask = ChatMessage(
             role=Role.USER, content=MEMORY_COMPACT_MSG.format(language=self.language)
@@ -378,6 +380,7 @@ class Agent:
         else:
             reasoning = None
         summary_message = ChatMessage(
+            id=f"context_fold_{uuid.uuid4().hex[:8]}",
             role=agent_message.role,
             content=agent_message.content,
             tool_calls=agent_message.tool_calls,
@@ -399,8 +402,6 @@ class Agent:
             summary_message,
             *observations,
         ]
-        self.chat_history.extend(new_tail)
-        self.save_history(message_only=True)
         self.chat_history = head + tail + new_tail
 
     def _split_history(self, keep_head, keep_tail):
