@@ -42,10 +42,10 @@
             "-i",
             "--rm",
             "-v",
-            "$WORKSPACE:$WORKSPACE",
+            "$HOST_WORKSPACE:$WORKSPACE",
             "-w",
             "$WORKSPACE",
-            "desktop-commander-deeppresenter"
+            "deeppresenter-sandbox"
         ]
     }
 ]

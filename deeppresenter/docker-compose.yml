@@ -1,17 +1,17 @@
 services:
   build-sandbox:
     build:
-      context: ./deeppresenter/docker
-      dockerfile: SandBox.Dockerfile
-    image: deeppresenter-sandbox:0.1.0
+      context: ./docker/SandBox
+      dockerfile: SandBox.buildkit.Dockerfile
+    image: deeppresenter-sandbox:lastest
     profiles:
       - build-only
 
   deeppresenter-host:
     build:
-      context: ./deeppresenter/docker
+      context: ./docker/Host
       dockerfile: Host.Dockerfile
-    image: deeppresenter-host:0.1.0
+    image: deeppresenter-host:latest
     container_name: deeppresenter-host
     ports:
       - "7861:7861"
