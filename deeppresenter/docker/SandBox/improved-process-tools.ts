@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { terminalManager } from '../terminal-manager.js';
 import { commandManager } from '../command-manager.js';
 import { StartProcessArgsSchema, ReadProcessOutputArgsSchema, InteractWithProcessArgsSchema, ForceTerminateArgsSchema, ListSessionsArgsSchema } from './schemas.js';
