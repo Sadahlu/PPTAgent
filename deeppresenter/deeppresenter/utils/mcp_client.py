@@ -6,6 +6,7 @@ from typing import Any
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.sse import sse_client
 from mcp.client.stdio import logger, stdio_client
+from mcp.client.streamable_http import streamablehttp_client as streamable_http_client
 
 from deeppresenter.utils.constants import MCP_CALL_TIMEOUT, MCP_CONNECT_TIMEOUT
 from deeppresenter.utils.log import error, exception, info, warning
@@ -56,9 +57,16 @@ class MCPClient:
                     server_id, config.command, config.args, config.env, exit_stack
                 )
             elif config.url:
-                await self.connect_to_server_sse(
-                    server_id, config.url, config.header, exit_stack
-                )
+                # Check transport type (default to sse for backward compatibility)
+                transport = config.env.get("MCP_TRANSPORT", "sse")
+                if transport == "streamable-http":
+                    await self.connect_to_server_streamable_http(
+                        server_id, config.url, config.header, exit_stack
+                    )
+                else:
+                    await self.connect_to_server_sse(
+                        server_id, config.url, config.header, exit_stack
+                    )
             else:
                 raise ValueError(
                     "Config must contain either a command or a url for the server"
@@ -102,6 +110,36 @@ class MCPClient:
             raise
         except Exception as e:
             error(f"Error connecting to SSE server {server_id}: {e}")
+            self._close_server(server_id)
+            raise
+
+    async def connect_to_server_streamable_http(
+        self, server_id: str, url: str, header=None, exit_stack: AsyncExitStack = None
+    ):
+        """Connect to MCP server using streamable-http protocol."""
+        if streamable_http_client is None:
+            raise ImportError(
+                "streamable-http is not available in the current MCP version. "
+                "Please upgrade to mcp>=1.14.0 or use 'sse' transport instead."
+            )
+
+        try:
+            streamable_http_transport = await exit_stack.enter_async_context(
+                streamable_http_client(url, header)
+            )
+            streamable_http, write = streamable_http_transport
+            session = await exit_stack.enter_async_context(
+                ClientSession(streamable_http, write, MCP_CONNECT_TIMEOUT)
+            )
+            await asyncio.wait_for(session.initialize(), timeout=MCP_CONNECT_TIMEOUT)
+            self.sessions[server_id] = session
+            info(f"Connected to server {server_id} via streamable-http")
+        except TimeoutError:
+            error(f"Timeout connecting to streamable-http server {server_id}")
+            self._close_server(server_id)
+            raise
+        except Exception as e:
+            error(f"Error connecting to streamable-http server {server_id}: {e}")
             self._close_server(server_id)
             raise
 

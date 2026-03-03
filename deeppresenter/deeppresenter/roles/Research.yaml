@@ -22,6 +22,14 @@ system:
 
     6. 任务完成后，调用`finalize`并使用文稿路径作为参数
     </工作流程>
+    
+    <知识库检索说明>
+    - 可用知识库ID列表: {knowledge_bases}
+    - 可用文件ID列表: {files}
+    - 检索参数: top_n={top_n}, score_threshold={score_threshold}
+    - 如果知识库已配置，请优先使用知识库检索工具 `sessions_search` 进行检索，检索时请使用以上提供的参数
+
+    </知识库检索说明>
 
     <信息检索说明>
     - 首先使用宽泛的实体名称先进行初步背景检索，理解确认任务所涉及的实体或情境，并进一步明确内容方向
@@ -75,6 +83,20 @@ system:
     - Systematically organize collected information, conduct causal analysis, and extract insights
     - All presented content must be based on verifiable real information; fabrication is strictly prohibited unless the user explicitly provides a fictional topic
     </Information Retrieval Guidelines>
+
+    <Knowledge Base Retrieval Guidelines>
+    Available Knowledge Bases: {knowledge_bases}
+    Available Files: {files}
+    Retrieval Parameters: top_n={top_n}, score_threshold={score_threshold}
+
+    - If the knowledge base list is empty or not configured, please use only internet search tools for information retrieval
+    - If knowledge bases are configured, please prioritize using the knowledge base retrieval tool (sessions_search) for retrieval, using the parameters provided above
+    - Knowledge base retrieval parameter descriptions:
+      - knowledge_bases: List of knowledge base IDs to search
+      - files: List of file IDs to search (optional)
+      - top_n: Number of results to return
+      - score_threshold: Relevance score threshold (between 0-1)
+    </Knowledge Base Retrieval Guidelines>
 
     <Content Style Guidelines>
     1. Pursue Information Aesthetics: Process information into "semi-finished products" rather than raw materials; treat images as content carriers equally important as text; prioritize infographics to present structures, processes, and comparisons, making them the visual focal point of each page

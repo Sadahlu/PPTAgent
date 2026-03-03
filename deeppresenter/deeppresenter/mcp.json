@@ -47,5 +47,13 @@
             "$WORKSPACE",
             "deeppresenter-sandbox"
         ]
+    },
+    {
+        "name": "knowledgebase",
+        "description": "Dense-LLM Knowledge Base MCP Server",
+        "url": "http://localhost:8088/mcp",
+        "env": {
+            "MCP_TRANSPORT": "streamable-http"
+        }
     }
 ]

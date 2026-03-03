@@ -6,6 +6,10 @@ ENV MCP_CLIENT_DOCKER=true
 
 WORKDIR /usr/src/app
 
+RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.tuna.tsinghua.edu.cn/debian|g' /etc/apt/sources.list && \
+    sed -i 's|http://deb.debian.org/debian-security|http://mirrors.tuna.tsinghua.edu.cn/debian-security|g' /etc/apt/sources.list && \
+    sed -i 's|http://security.debian.org/debian-security|http://mirrors.tuna.tsinghua.edu.cn/debian-security|g' /etc/apt/sources.list
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update --allow-insecure-repositories && \
@@ -15,23 +19,35 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN git clone https://github.com/wonderwhy-er/DesktopCommanderMCP.git . && \
-    git checkout 252a00d624c2adc5707fa743c57a1b68bc223689 && \
-    rm -rf .git
+# Copy local DesktopCommanderMCP repository
+COPY DesktopCommanderMCP/ .
 
 RUN --mount=type=cache,target=/root/.npm \
     npm install --ignore-scripts
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get install -y --no-install-recommends curl wget unzip ripgrep vim
+    apt-get install -y --no-install-recommends curl wget unzip ripgrep vim sudo g++ locales
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 
 ENV PATH="/opt/.venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
     CHROME_PATH=/usr/bin/chromium \
-    VIRTUAL_ENV="/opt/.venv"
+    VIRTUAL_ENV="/opt/.venv" \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    MPLCONFIGDIR=/etc/matplotlib
+
+# Puppeteer config for mermaid-cli
+RUN echo '{"args":["--no-sandbox","--disable-setuid-sandbox"]}' > /root/.puppeteerrc.json
+
+# Export ENV to /etc/profile.d/ for bash -lc and interactive shells
+RUN printenv | grep -E '^(PATH|PYTHONUNBUFFERED|VIRTUAL_ENV|PUPPETEER_|CHROME_|LANG|LC_ALL|MPLCONFIGDIR|MCP_CLIENT_DOCKER)=' | sed 's/^/export /' > /etc/profile.d/docker-env.sh && \
+    echo 'source /etc/profile.d/docker-env.sh' >> /etc/bash.bashrc
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv --python 3.13 $VIRTUAL_ENV && \
@@ -49,11 +65,10 @@ RUN --mount=type=cache,target=/root/.npm \
 
 RUN npx playwright install chromium
 
-COPY config.json /root/.claude-server-commander/config.json
-COPY server.ts src/server.ts
-COPY improved-process-tools.ts src/tools/improved-process-tools.ts
+COPY deeppresenter/docker/SandBox/config.json /root/.claude-server-commander/config.json
+COPY deeppresenter/docker/SandBox/server.ts src/server.ts
+COPY deeppresenter/docker/SandBox/improved-process-tools.ts src/tools/improved-process-tools.ts
 
-ENV MPLCONFIGDIR=/etc/matplotlib
 RUN fc-cache -f && \
     mkdir -p /etc/matplotlib && \
     printf '%s\n' \

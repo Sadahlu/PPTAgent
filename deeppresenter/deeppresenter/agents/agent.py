@@ -133,8 +133,14 @@ class Agent:
                 t for t in self.tools if not t["function"]["name"].startswith("inspect")
             ]
 
-        # Replace {workspace} placeholder in system prompt
-        self.system = self.system.format(workspace=self.workspace)
+        # Replace {workspace} and {knowledge_bases} placeholder in system prompt
+        self.system = self.system.format(
+            workspace=self.workspace,
+            knowledge_bases=["2025101716_905bcb877a2d63af34ccc4cfab006f2899526_lv0"],
+            files="[]",
+            top_n="5",
+            score_threshold="0.6"
+        )
 
         # ? for those agents equipped with sandbox only
         if any(t["function"]["name"] == "execute_command" for t in self.tools):
